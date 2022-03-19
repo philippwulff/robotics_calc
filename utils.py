@@ -51,16 +51,32 @@ def full_homo_transf(transforms, verbose=True, simple=True):
     return left_mat
 
 
-def prop_velo(rot_mats, joint_params, joint_points, verbose=True, simple=True):
+def prop_velo(dh_params, joint_points, verbose=True, simple=True):
+    transforms = [homo_transf(*dhp) for dhp in dh_params]
+    rot_mats = [t[:3, :3] for t in transforms]
+
+    joint_params = []
+    for joint in dh_params:
+        for param in joint:
+            if "d" in str(param):
+                joint_params.append(Symbol(fr"\dot\{param}"))
+            elif "theta" in str(param):
+                joint_params.append(Symbol(fr"\dot\{param}"))
+
     # base is fixed
-    omega = Matrix([[0], [0], [0]])
+    omega = Matrix([0, 0, 0])
     for i in range(len(rot_mats)):
-        v = rot_mats[i] @ (omega.cross(joint_points[i]))
-        omega = rot_mats[i] @ omega + joint_params[i] * Matrix([[0], [0], [1]])
+        if "theta" in str(joint_params[i]):
+            v = rot_mats[i] @ (omega.cross(joint_points[i]))
+            omega = rot_mats[i] @ omega + joint_params[i] * Matrix([0, 0, 1])
+        elif "d" in str(joint_params[i]):
+            v = rot_mats[i] @ (omega.cross(joint_points[i])) + joint_params[i] * Matrix([0, 0, 1])
+            omega = rot_mats[i] @ omega
+
         if verbose:
             if simple:
                 omega = simplify(omega)
                 v = simplify(v)
+            display(Math("{}" f"^{i + 1}v_{i + 1} = {latex(v)}"))
             display(Math("{}" f"^{i+1}{latex(Symbol('omega'))}_{i+1} = {latex(omega)}"))
 
-            display(Math("{}" f"^{i+1}v_{i+1} = {latex(v)}"))
