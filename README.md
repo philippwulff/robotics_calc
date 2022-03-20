@@ -21,4 +21,4 @@ Thus, you can use it to check your calculations in the exercises (since sometime
 The functions are intended to be imported into Jupyter notebooks and be used from there. 
 This is because Jupyter allows for displaying formulas using LaTeX (that is, if you have it installed - otherwise it will render them with `matplotlib`).
 
-To get a better feel of how to use the functions, look at the example notebooks under `tests/`.
+To get a better feel of how to use the functions, look at the example notebooks under `examples/*.ipynbk`.

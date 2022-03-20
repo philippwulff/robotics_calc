@@ -11,7 +11,8 @@ def rad(degrees):
 
 
 def homo_transf(alpha, a, d, theta):
-    """Returns homogeneous transform matrix. Input are D-H-parameters of one link. All angles are in degrees.
+    """Returns the homogeneous transform matrix. Input are Denavit-Hartenberg parameters of one link.
+    All angles are in degrees.
 
     Parameters
     ----------
