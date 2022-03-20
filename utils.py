@@ -6,10 +6,27 @@ from IPython.display import display, Math
 
 
 def rad(degrees):
+    """Convert degrees to radians."""
     return degrees/180 * sympy.pi
 
 
 def homo_transf(alpha, a, d, theta):
+    """Returns homogeneous transform matrix. Input are D-H-parameters of one link. All angles are in degrees.
+
+    Parameters
+    ----------
+    alpha: float
+        The angle from Zi to Zi+1 measured about Xi
+    a: float
+        The distance from Zi to Zi+1 measured along Xi
+    d: float
+        The distance from Xi-1 to Xi measured along Zi
+    theta: float
+        The angle from Xi-1 to Xi measured about Zi
+    Returns
+    -------
+    sympy.Matrix
+    """
     alpha = rad(alpha)
     if isinstance(theta, str):
         theta = Symbol(theta)
@@ -28,6 +45,20 @@ def homo_transf(alpha, a, d, theta):
 
 
 def build_transf(dh_params, verbose=True):
+    """Computes the homogeneous transforms for all links.
+
+    Parameters
+    ----------
+    dh_params: list of lists
+        Each sublist are the D-H-parameters for a given link (alpha, a, d, theta).
+        Example: [[0, 1, 0, sympy.Symbol("theta_1")], [0, 2, 2, sympy.Symbol("theta_2")]]
+    verbose: bool
+        Wether to print the outputs.
+
+    Returns
+    -------
+        List of transform matrices.
+    """
     transforms = [homo_transf(*dhp) for dhp in dh_params]
 
     if verbose:
@@ -39,6 +70,18 @@ def build_transf(dh_params, verbose=True):
 
 
 def full_homo_transf(transforms, verbose=True, simple=True):
+    """Multiplies out homogeneous transforms from the left.
+
+    Parameters
+    ----------
+    transforms: List of homogeneous transforms.
+    verbose: Whether to print the intermediary and final outputs.
+    simple: Whether to simplify the results.
+
+    Returns
+    -------
+        sympy.Matrix
+    """
     left_mat = transforms[0]
     for i in range(1, len(transforms)):
         left_mat = left_mat @ transforms[i]
@@ -52,6 +95,20 @@ def full_homo_transf(transforms, verbose=True, simple=True):
 
 
 def prop_velo(dh_params, joint_points, verbose=True, simple=True):
+    """Propagate velocities from the base to the end-effector of the manipulator.
+
+    Parameters
+    ----------
+    dh_params: list of lists with D-H-parameters (alpha, a, d, theta)
+    joint_points: list of sympy.Matrix vectors
+        The joint points measured in the coordinate frame of the previous joint.
+    verbose: Whether to print the intermediary results.
+    simple: Whether to simplify results.
+
+    Returns
+    -------
+        None
+    """
     transforms = [homo_transf(*dhp) for dhp in dh_params]
     rot_mats = [t[:3, :3] for t in transforms]
 
@@ -82,6 +139,22 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
 
 
 def prop_force_torque(dh_params, joint_points, end_force_torque, verbose=True, simple=True):
+    """Propagates forces and torques from the end-effector to the base of the manipulator.
+
+    Parameters
+    ----------
+    dh_params: list of lists with D-H-parameters (alpha, a, d, theta)
+    joint_points: list of sympy.Matrix vectors
+        The joint points measured in the coordinate frame of the previous joint.
+    end_force_torque: sympy.Matrix of shape 6x1
+        The force-torque vector at the end-effector/ last link.
+    verbose: Whether to print the intermediary results.
+    simple: Whether to simplify results.
+
+    Returns
+    -------
+        None
+    """
     transforms = [homo_transf(*dhp) for dhp in dh_params]
     rot_mats = [t[:3, :3] for t in transforms]
 
