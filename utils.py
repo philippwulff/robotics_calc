@@ -80,3 +80,28 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
             display(Math("{}" f"^{i + 1}v_{i + 1} = {latex(v)}"))
             display(Math("{}" f"^{i+1}{latex(Symbol('omega'))}_{i+1} = {latex(omega)}"))
 
+
+def prop_force_torque(dh_params, joint_points, end_force_torque, verbose=True, simple=True):
+    transforms = [homo_transf(*dhp) for dhp in dh_params]
+    rot_mats = [t[:3, :3] for t in transforms]
+
+    force = end_force_torque[:3, :]
+    torque = end_force_torque[3:, :]
+
+    if verbose:
+        n = len(rot_mats)
+        display(Math("{}" f"^{n}f_{n} = {latex(force)}"))
+        display(Math("{}" f"^{n}n_{n} = {latex(torque)}"))
+
+    for i in reversed(range(1, len(rot_mats))):
+
+        force = rot_mats[i] @ force
+        torque = rot_mats[i] @ torque + joint_points[i].cross(force)
+
+        if verbose:
+            if simple:
+                force = simplify(force)
+                torque = simplify(torque)
+            display(Math("{}" f"^{i}f_{i} = {latex(force)}"))
+            display(Math("{}" f"^{i}n_{i} = {latex(torque)}"))
+
