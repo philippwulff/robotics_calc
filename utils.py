@@ -126,10 +126,16 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
     omega = Matrix([0, 0, 0])
     v = Matrix([0, 0, 0])
     for i in range(len(rot_mats)):
-        if "theta" in str(joint_params[i]):
-            v = rot_mats[i].T @ (v + omega.cross(joint_points[i]))
+        # If joint is neither revolute not prismatic
+        if i >= len(joint_params):
             # Transpose inverts rotation
+            v = rot_mats[i].T @ (v + omega.cross(joint_points[i]))
+            omega = rot_mats[i].T @ omega
+        # Revolute
+        elif "theta" in str(joint_params[i]):
+            v = rot_mats[i].T @ (v + omega.cross(joint_points[i]))
             omega = rot_mats[i].T @ omega + joint_params[i] * Matrix([0, 0, 1])
+        # Prismatic
         elif "d" in str(joint_params[i]):
             v = rot_mats[i].T @ (v + omega.cross(joint_points[i])) + joint_params[i] * Matrix([0, 0, 1])
             omega = rot_mats[i].T @ omega
