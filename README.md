@@ -2,6 +2,9 @@
 This small package implements algorithms to compute the forward and inverse kinematics of robot manipulators 
 as well as the Jacobian and rigid body dynamics. I coded this to help me solve the exercises in the course *Robotics* (IN2067) at the Technical University of Munich.
 
+![](imgs/manipulator.jpg)
+*A robotic manipulator.*
+
 ## Why it is helpful
 
 The calculations for robot manipulators can become very lengthy and are prone to errors. 
