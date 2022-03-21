@@ -1,5 +1,5 @@
 import numpy as np
-import sympy
+import sympy as sy
 from sympy import N, Matrix, Symbol, sin, cos, pprint, latex, init_printing, simplify
 import math
 from IPython.display import display, Math
@@ -7,7 +7,7 @@ from IPython.display import display, Math
 
 def rad(degrees):
     """Convert degrees to radians."""
-    return degrees/180 * sympy.pi
+    return degrees/180 * sy.pi
 
 
 def homo_transf(alpha, a, d, theta):
@@ -102,13 +102,14 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
     ----------
     dh_params: list of lists with D-H-parameters (alpha, a, d, theta)
     joint_points: list of sympy.Matrix vectors
-        The joint points measured in the coordinate frame of the previous joint.
+        The joint points measured in the coordinate frame of the previous joint. Ordered from base to end-effector.
     verbose: Whether to print the intermediary results.
     simple: Whether to simplify results.
 
     Returns
     -------
-        None
+        Final linear and angular velocity vectors
+        joint_params: list of derivatives of joint parameters
     """
     transforms = [homo_transf(*dhp) for dhp in dh_params]
     rot_mats = [t[:3, :3] for t in transforms]
@@ -123,13 +124,15 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
 
     # base is fixed
     omega = Matrix([0, 0, 0])
+    v = Matrix([0, 0, 0])
     for i in range(len(rot_mats)):
         if "theta" in str(joint_params[i]):
-            v = rot_mats[i] @ (omega.cross(joint_points[i]))
-            omega = rot_mats[i] @ omega + joint_params[i] * Matrix([0, 0, 1])
+            v = rot_mats[i].T @ (v + omega.cross(joint_points[i]))
+            # Transpose inverts rotation
+            omega = rot_mats[i].T @ omega + joint_params[i] * Matrix([0, 0, 1])
         elif "d" in str(joint_params[i]):
-            v = rot_mats[i] @ (omega.cross(joint_points[i])) + joint_params[i] * Matrix([0, 0, 1])
-            omega = rot_mats[i] @ omega
+            v = rot_mats[i].T @ (v + omega.cross(joint_points[i])) + joint_params[i] * Matrix([0, 0, 1])
+            omega = rot_mats[i].T @ omega
 
         if verbose:
             if simple:
@@ -137,6 +140,42 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
                 v = simplify(v)
             display(Math("{}" f"^{i + 1}v_{i + 1} = {latex(v)}"))
             display(Math("{}" f"^{i+1}{latex(Symbol('omega'))}_{i+1} = {latex(omega)}"))
+
+    return v, omega, joint_params
+
+
+def comp_jacobian(dh_params, joint_points, verbose=True, simple=True):
+    """Computes the Jacobian matrix.
+
+    Parameters
+    ----------
+    dh_params: list of lists with D-H-parameters (alpha, a, d, theta)
+    joint_points: list of sympy.Matrix vectors
+        The joint points measured in the coordinate frame of the previous joint. Ordered from base to end-effector.
+    verbose: Whether to print the intermediary results.
+    simple: Whether to simplify results.
+
+    Returns
+    -------
+        sympy.Matrix
+        The Jacobian matrix of shape (6, number of joint parameters).
+    """
+
+    v, omega, joint_params = prop_velo(dh_params, joint_points, verbose=verbose)
+
+    jacobian_rows = []
+    for vec in (v, omega):
+        for i in range(3):
+            # Collect factors; expanding and not simplifying makes this more robust
+            expr = sy.collect(sy.expand(vec[i, 0]), joint_params)
+            coeff = sy.Matrix([expr.coeff(v) for v in joint_params]).T
+            jacobian_rows.append(coeff)
+
+    jacobian = Matrix.vstack(*jacobian_rows)
+    display(Math("{}" f"^{len(dh_params)}J = {latex(jacobian)}"))
+    if simple:
+        jacobian = sy.simplify(jacobian)
+    return jacobian
 
 
 def prop_force_torque(dh_params, joint_points, end_force_torque, verbose=True, simple=True):
@@ -146,7 +185,7 @@ def prop_force_torque(dh_params, joint_points, end_force_torque, verbose=True, s
     ----------
     dh_params: list of lists with D-H-parameters (alpha, a, d, theta)
     joint_points: list of sympy.Matrix vectors
-        The joint points measured in the coordinate frame of the previous joint.
+        The joint points measured in the coordinate frame of the previous joint. Ordered from base to end-effector.
     end_force_torque: sympy.Matrix of shape 6x1
         The force-torque vector at the end-effector/ last link.
     verbose: Whether to print the intermediary results.
