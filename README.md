@@ -17,7 +17,7 @@ Thus, you can use it to check your calculations in the exercises (since sometime
 - Use Denavit-Hartenberg parameters to compute homogeneous transforms for individual links and the full robot.
 - Propagate velocities from the base to the end-effector to read off the Jacobian.
 - Compute the Jacobian matrix explicitly.
-- Propagate forces and torques from the end-effector to the base to read off the forces acting on each joint.
+- Propagate forces and torques from the end-effector to the base to read off the torques acting on each joint.
 
 
 ## How to use it & examples
