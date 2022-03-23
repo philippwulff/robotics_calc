@@ -229,6 +229,31 @@ def prop_force_torque(dh_params, joint_points, end_force_torque, verbose=True, s
 
 def newton_euler(dh_params, joint_points, m_center_points, v_dot_0, link_m, link_I,
                  end_force_torque=sy.Matrix([0, 0, 0, 0, 0, 0]), verbose=True, simple=True):
+    """Compute joint torques/ forces via the Newton-Euler-Method.
+
+    Parameters
+    ----------
+    dh_params: list of lists with D-H-parameters (alpha, a, d, theta)
+    joint_points: list of sympy.Matrix vectors
+        The joint points measured in the coordinate frame of the previous joint. Ordered from base to end-effector.
+    end_force_torque: sympy.Matrix of shape 6x1
+        The force-torque vector at the end-effector/ last link.
+    verbose: Whether to print the intermediary results.
+    simple: Whether to simplify results.
+    m_center_points: list of sympy.Matrix
+        The center of mass of link i in the coordinate frame of link i.
+    v_dot_0: sympy.Matrix (3 x 1 vector)
+        The acceleration of the base frame. Usually set to -G.
+    link_m: list
+        The mass of each link.
+    link_I: list of sympy.Matrix (3 x 3 matrices)
+        The inertia tensor of each link.
+
+    Returns
+    -------
+        sympy.Matrix of shape (number of joints, 1)
+        The joint torques/ forces.
+    """
 
     transforms = [homo_transf(*dhp) for dhp in dh_params]
     rot_mats = [t[:3, :3] for t in transforms]
