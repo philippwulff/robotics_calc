@@ -18,7 +18,7 @@ Thus, you can use it to check your calculations in the exercises (since sometime
 - Propagate velocities from the base to the end-effector to read off the Jacobian.
 - Compute the Jacobian matrix explicitly.
 - Propagate forces and torques from the end-effector to the base to read off the forces acting on each joint.
-
+- Use the Newton-Euler-Algorithm to find the joint torques caused by motion of the manipulator.
 
 ## How to use it & examples
 

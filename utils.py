@@ -33,6 +33,8 @@ def homo_transf(alpha, a, d, theta):
         theta = Symbol(theta)
     else:
         theta = rad(theta)
+    if isinstance(d, str):
+        d = Symbol(d)
 
     transf = Matrix(
         [
@@ -185,7 +187,7 @@ def comp_jacobian(dh_params, joint_points, verbose=True, simple=True):
 
 
 def prop_force_torque(dh_params, joint_points, end_force_torque, verbose=True, simple=True):
-    """Propagates forces and torques from the end-effector to the base of the manipulator.
+    """Propagates static forces and torques from the end-effector to the base of the manipulator.
 
     Parameters
     ----------
@@ -224,3 +226,119 @@ def prop_force_torque(dh_params, joint_points, end_force_torque, verbose=True, s
             display(Math("{}" f"^{i}f_{i} = {latex(force)}"))
             display(Math("{}" f"^{i}n_{i} = {latex(torque)}"))
 
+
+def newton_euler(dh_params, joint_points, m_center_points, v_dot_0, link_m, link_I,
+                 end_force_torque=sy.Matrix([0, 0, 0, 0, 0, 0]), verbose=True, simple=True):
+
+    transforms = [homo_transf(*dhp) for dhp in dh_params]
+    rot_mats = [t[:3, :3] for t in transforms]
+
+    joint_params_fo = []            # first-order derivative
+    joint_params_so = []            # second-order derivative
+    for joint in dh_params:
+        for param in joint:
+            if "d" in str(param):
+                joint_params_fo.append(Symbol(r"\dot{" + param + "}"))
+                joint_params_so.append(Symbol(r"\ddot{" + param + "}"))
+            elif "theta" in str(param):
+                joint_params_fo.append(Symbol(fr"\dot\{param}"))
+                joint_params_so.append(Symbol(fr"\ddot\{param}"))
+
+    # base is fixed
+    omega = Matrix([0, 0, 0])
+    omega_dot = Matrix([0, 0, 0])
+    v_dot = v_dot_0
+    # Forces and torques acting on the centre of mass of each link
+    link_F = []
+    link_N = []
+
+    if verbose:
+        print("Forward phase:")
+
+    # forward phase
+    for i in range(len(rot_mats)):
+        # If the joint is neither revolute not prismatic
+        if i >= len(joint_params_fo):
+            # Transpose inverts rotation
+            v_dot = rot_mats[i].T @ (omega.cross(joint_points[i]) + v_dot)
+            omega_dot = rot_mats[i].T @ omega_dot
+            omega = rot_mats[i].T @ omega
+        # Revolute
+        elif "theta" in str(joint_params_fo[i]):
+            v_dot = rot_mats[i].T @ (omega_dot.cross(joint_points[i]) + omega.cross(omega.cross(joint_points[i])) +
+                                     v_dot)
+            omega_dot = rot_mats[i].T @ omega_dot + \
+                        rot_mats[i].T @ omega.cross(joint_params_fo[i] * Matrix([0, 0, 1])) + \
+                        joint_params_so[i] * Matrix([0, 0, 1])
+            omega = rot_mats[i].T @ omega + joint_params_fo[i] * Matrix([0, 0, 1])
+        # Prismatic
+        elif "d" in str(joint_params_fo[i]):
+            v_dot = rot_mats[i].T @ (omega_dot.cross(joint_points[i]) + omega.cross(omega.cross(joint_points[i])) +
+                                     v_dot)
+            omega_dot = rot_mats[i].T @ omega_dot
+            omega = rot_mats[i].T @ omega
+            v_dot += 2 * omega.cross(joint_params_fo[i] * Matrix([0, 0, 1])) + joint_params_so[i] * Matrix([0, 0, 1])
+
+        # calculate velocity of center of mass and forces and torques acting on link i+1
+
+        v_c_dot = omega_dot.cross(m_center_points[i]) + omega.cross(omega.cross(m_center_points[i])) + v_dot
+        F = link_m[i] * v_c_dot
+        N = link_I[i] @ omega_dot + omega.cross(link_I[i] @ omega)
+        link_F.append(F)
+        link_N.append(N)
+
+        if verbose:
+            if simple:
+                omega = simplify(omega)
+                omega_dot = simplify(omega_dot)
+                v_dot = simplify(v_dot)
+            print(f"i = {i}:")
+            display(Math("{}" f"^{i + 1}" + r"\dot{v}_" + f"{i + 1} = {latex(v_dot)}"))
+            display(Math("{}" f"^{i+1}{latex(Symbol('omega'))}_{i+1} = {latex(omega)}"))
+            display(Math("{}" f"^{i + 1}" + r"\dot{" + latex(Symbol("omega")) + "}_" + f"{i + 1} = {latex(omega_dot)}"))
+            display(Math("{}" f"^{i + 1}" + r"\dot{v}_{C_" + f"{i + 1}" + "}" + f" = {latex(v_dot)}"))
+            display(Math("{}" f"^{i+1}F_{i+1} = {latex(F)}"))
+            display(Math("{}" f"^{i+1}N_{i+1} = {latex(N)}"))
+
+    if verbose:
+        print("Backwards phase:")
+
+    # Backwards
+    force = end_force_torque[:3, :]
+    torque = end_force_torque[3:, :]
+    forces = []
+    torques = []
+
+    for i in reversed(range(0, len(rot_mats))):
+
+        torque = link_N[i] + rot_mats[i] @ torque + m_center_points[i].cross(link_F[i]) + \
+                 joint_points[i].cross(rot_mats[i] @ force)
+        force = rot_mats[i] @ force + link_F[i]
+
+        if simple:
+            force = simplify(force)
+            torque = simplify(torque)
+
+        forces.append(force)
+        torques.append(torque)
+
+        if verbose:
+            print(f"i = {i+1}:")
+            display(Math("{}" f"^{i+1}f_{i+1} = {latex(force)}"))
+            display(Math("{}" f"^{i+1}n_{i+1} = {latex(torque)}"))
+
+    print("Joint torques/ forces:")
+
+    tau = []
+    for i in range(len(joint_params_fo)):
+        # Check for theta first, because e.g. "\dot\theta_1" also contains "d"
+        if "theta" in str(joint_params_fo[i]):
+            tau.append(torques[-i-1][2, 0])
+        elif "d" in str(joint_params_fo[i]):
+            tau.append(forces[-i-1][2, 0])
+
+    tau = sy.Matrix(tau)
+
+    display(Math(r"\tau = " + latex(sy.Matrix([sy.Symbol(f"tau_{i}") for i in range(1, len(tau)+1)])) + f" = {latex(tau)}"))
+
+    return tau
