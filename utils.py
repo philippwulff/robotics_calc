@@ -1,7 +1,5 @@
-import numpy as np
 import sympy as sy
-from sympy import N, Matrix, Symbol, sin, cos, pprint, latex, init_printing, simplify
-import math
+from sympy import Matrix, Symbol, sin, cos, latex, simplify
 from IPython.display import display, Math
 
 
