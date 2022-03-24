@@ -18,7 +18,9 @@ Thus, you can use it to check your calculations in the exercises (since sometime
 - Propagate velocities from the base to the end-effector to read off the Jacobian.
 - Compute the Jacobian matrix explicitly.
 - Propagate forces and torques from the end-effector to the base to read off the torques acting on each joint.
-- Use the Newton-Euler-Algorithm to find joint torques/forces cause by motion.
+- Determine the dynamics of the robot (joint torques from robot motion)
+  - via the Newton-Euler-Method or
+  - TODO: via the Lagrangian approach.
 
 ## How to use it & examples
 

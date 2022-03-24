@@ -1,6 +1,7 @@
 import sympy as sy
 from sympy import Matrix, Symbol, sin, cos, latex, simplify
 from IPython.display import display, Math
+from sympy.physics.mechanics import dynamicsymbols, init_vprinting
 
 
 def rad(degrees):
@@ -365,3 +366,30 @@ def newton_euler(dh_params, joint_points, m_center_points, v_dot_0, link_m, link
     display(Math(r"\tau = " + latex(sy.Matrix([sy.Symbol(f"tau_{i}") for i in range(1, len(tau)+1)])) + f" = {latex(tau)}"))
 
     return tau
+
+
+def lagrange(dh_params, m_center_points_0, link_m, link_I, verbose=True, simple=True):
+
+    # TODO
+
+    # Convert thetas and ds in dh_params to dynamic symbols which allow autodiff
+    joint_params = []
+    dh_rows = []
+    for joint in dh_params:
+        row = []
+        for param in joint:
+            if "d" in str(param) or "theta" in str(param):
+                dyn_sym = dynamicsymbols(str(param))
+                row.append(dyn_sym)
+                joint_params.append(dyn_sym)
+            elif isinstance(param, str):
+                row.append(Symbol(param))
+            else:
+                row.append(param)
+        dh_rows.append(row)
+    dh_params = dh_rows
+
+    transforms = [homo_transf(*dhp) for dhp in dh_params]
+    rot_mats = [t[:3, :3] for t in transforms]
+
+    return dh_params, joint_params
