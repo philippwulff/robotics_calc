@@ -145,8 +145,8 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
             if simple:
                 omega = simplify(omega)
                 v = simplify(v)
-            display(Math("{}" f"^{i + 1}v_{i + 1} = {latex(v)}"))
             display(Math("{}" f"^{i+1}{latex(Symbol('omega'))}_{i+1} = {latex(omega)}"))
+            display(Math("{}" f"^{i + 1}v_{i + 1} = {latex(v)}"))
 
     return v, omega, joint_params
 
@@ -179,9 +179,9 @@ def comp_jacobian(dh_params, joint_points, verbose=True, simple=True):
             jacobian_rows.append(coeff)
 
     jacobian = Matrix.vstack(*jacobian_rows)
-    display(Math("{}" f"^{len(dh_params)}J = {latex(jacobian)}"))
     if simple:
         jacobian = sy.simplify(jacobian)
+    display(Math("{}" f"^{len(dh_params)}J = {latex(jacobian)}"))
     return jacobian
 
 
