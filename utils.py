@@ -119,7 +119,7 @@ def prop_velo(dh_params, joint_points, verbose=True, simple=True):
     for joint in dh_params:
         for param in joint:
             if "d" in str(param):
-                joint_params.append(Symbol(fr"\dot\{param}"))
+                joint_params.append(Symbol(fr"\dot {param}"))
             elif "theta" in str(param):
                 joint_params.append(Symbol(fr"\dot\{param}"))
 

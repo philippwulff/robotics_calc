@@ -8,8 +8,8 @@ as well as the Jacobian and rigid body dynamics. I coded this to help me solve t
 ## Why it is helpful
 
 The calculations for robot manipulators can become very lengthy and are prone to errors. 
-This package uses symbolic calculations, which means, that the results are mathematical formulas and can deal with variables.
-Thus, you can use it to check your calculations in the exercises (since sometimes the solutions may be missing).
+This package uses symbolic calculations, such that the results are mathematical formulas and can deal with variables.
+Thus, you can use it to check your calculations in the exercises (since sometimes the solutions in IN2067 are missing or incorrect).
 
 
 ## Implemented Features
