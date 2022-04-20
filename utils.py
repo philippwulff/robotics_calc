@@ -2,6 +2,7 @@ import sympy as sy
 from sympy import Matrix, Symbol, sin, cos, latex, simplify
 from IPython.display import display, Math
 from sympy.physics.mechanics import dynamicsymbols, init_vprinting
+from copy import copy
 
 
 def rad(degrees):
@@ -44,6 +45,17 @@ def homo_transf(alpha, a, d, theta):
         ]
     )
     return simplify(transf)
+
+
+def homo_transpose(transform, simple=True):
+
+    R = transform[:3, :3].T
+    transform_T = copy(transform.as_mutable())
+    transform_T[:3, :3] = R
+    transform_T[:3, 3] = -R @ transform[:3, 3]
+    if simple:
+        transform_T = sy.simplify(sy.expand(transform_T))
+    return transform_T
 
 
 def build_transf(dh_params, verbose=True):
